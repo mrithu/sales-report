@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feastables Sales Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,300;0,400;0,500;0,700;0,900;1,400;1,700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            /* Feastables Brand Colors */
+            --primary: #72E2FF;
+            --secondary: #CEFC17;
+            --bg-light: #FFFFFF;
+            --text-main: #000000;
+            --border-color: #000000;
+            --accent-pink: #FF5C8D; 
+
+            /* Spacing & Layout */
+            --base-unit: 4px;
+            --br-primary: 0px;
+            --br-secondary: 6px;
+            --br-card: 12px;
+            
+            /* Shadows for brutalist/playful vibe */
+            --hard-shadow: 6px 6px 0px 0px var(--border-color);
+            --hard-shadow-hover: 2px 2px 0px 0px var(--border-color);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-main);
+            /* Playful grid background */
+            background-image: linear-gradient(var(--border-color) 2px, transparent 2px), linear-gradient(90deg, var(--border-color) 2px, transparent 2px);
+            background-size: 60px 60px;
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* White overlay to soften the brutalist grid background slightly */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255, 255, 255, 0.85);
+            z-index: -1;
+        }
+
+        /* Animations */
+        @keyframes slideUpFade {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(-2deg); }
+            50% { transform: translateY(-8px) rotate(2deg); }
+        }
+
+        .animate-in {
+            animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+        }
+        
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+        .delay-4 { animation-delay: 0.4s; }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--bg-light);
+            border-right: 4px solid var(--border-color);
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+        }
+
+        .logo-container {
+            padding: 30px 20px;
+            border-bottom: 4px solid var(--border-color);
+            background: var(--secondary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .logo-container img {
+            width: 160px;
+            animation: float 4s ease-in-out infinite;
+            filter: drop-shadow(4px 4px 0px var(--border-color));
+        }
+
+        .nav-menu {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            flex-grow: 1;
+        }
+
+        .nav-item {
+            padding: 12px 20px;
+            font-size: 20px;
+            font-weight: 700;
+            text-transform: uppercase;
+            text-decoration: none;
+            color: var(--text-main);
+            background: transparent;
+            border: 3px solid transparent;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            cursor: pointer;
+            border-radius: var(--br-secondary);
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: var(--primary);
+            border: 3px solid var(--border-color);
+            box-shadow: var(--hard-shadow);
+            transform: translate(-3px, -3px);
+        }
+
+        .nav-item.active {
+            background: var(--secondary);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex-grow: 1;
+            padding: 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 52px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: -2px;
+            line-height: 1;
+            text-shadow: 4px 4px 0px var(--primary), 8px 8px 0px rgba(0,0,0,0.1);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            background: var(--bg-light);
+            color: var(--text-main);
+            font-family: 'Kanit', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 10px 24px;
+            border: 3px solid var(--border-color);
+            border-radius: var(--br-primary);
+            cursor: pointer;
+            box-shadow: var(--hard-shadow);
+            transition: all 0.1s ease;
+        }
+
+        .btn-primary { background: var(--primary); }
+        .btn-secondary { background: var(--secondary); border-radius: var(--br-secondary); }
+
+        .btn:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 8px 8px 0px 0px var(--border-color);
+        }
+
+        .btn:active {
+            box-shadow: 0px 0px 0px 0px var(--border-color);
+            transform: translate(6px, 6px);
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .metric-card {
+            background: var(--bg-light);
+            border: 4px solid var(--border-color);
+            padding: 25px;
+            border-radius: var(--br-card);
+            box-shadow: var(--hard-shadow);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s;
+            cursor: pointer;
+        }
+
+        .metric-card:hover {
+            transform: translate(-4px, -4px);
+            box-shadow: 10px 10px 0px 0px var(--border-color);
+        }
+
+        .metric-card::after {
+            content: '';
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            width: 120px;
+            height: 120px;
+            background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.05) 10px, rgba(0,0,0,0.05) 20px);
+            border-radius: 50%;
+            pointer-events: none;
+            transition: transform 0.4s ease;
+        }
+
+        .metric-card:hover::after {
+            transform: scale(1.2) rotate(15deg);
+        }
+
+        .metric-card.green { background: var(--secondary); }
+        .metric-card.blue { background: var(--primary); }
+        .metric-card.pink { background: var(--accent-pink); }
+        .metric-card.white { background: var(--bg-light); }
+
+        .metric-title {
+            font-size: 16px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .metric-trend {
+            font-size: 14px;
+            background: var(--border-color);
+            color: var(--bg-light);
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        .metric-value {
+            font-size: 48px;
+            font-weight: 900;
+            line-height: 1.1;
+        }
+
+        /* Dashboard Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .panel {
+            background: var(--bg-light);
+            border: 4px solid var(--border-color);
+            border-radius: var(--br-card);
+            box-shadow: var(--hard-shadow);
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 4px solid var(--border-color);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .panel-title {
+            font-size: 24px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .chart-tabs {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chart-tab {
+            padding: 5px 15px;
+            font-family: 'Kanit', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            background: transparent;
+            border: 2px solid var(--border-color);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .chart-tab.active {
+            background: var(--border-color);
+            color: var(--bg-light);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 350px;
+            width: 100%;
+            flex-grow: 1;
+        }
+
+        /* Products List */
+        .product-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+            max-height: 350px;
+            padding-right: 5px;
+        }
+
+        /* Custom Scrollbar */
+        .product-list::-webkit-scrollbar { width: 8px; }
+        .product-list::-webkit-scrollbar-track { background: transparent; border-left: 2px solid var(--border-color); }
+        .product-list::-webkit-scrollbar-thumb { background: var(--border-color); }
+
+        .product-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px;
+            border: 3px solid var(--border-color);
+            border-radius: var(--br-secondary);
+            background: var(--bg-light);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            cursor: pointer;
+        }
+
+        .product-item:hover {
+            transform: translateX(5px) translateY(-2px);
+            box-shadow: 4px 4px 0px 0px var(--border-color);
+            z-index: 2;
+        }
+
+        .product-item:nth-child(1):hover { background: var(--primary); }
+        .product-item:nth-child(2):hover { background: var(--secondary); }
+        .product-item:nth-child(3):hover { background: var(--accent-pink); }
+        .product-item:nth-child(4):hover { background: #FFB020; } /* Orange accent */
+
+        .product-img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            background: #f8f8f8;
+            padding: 2px;
+        }
+
+        .product-info {
+            flex-grow: 1;
+        }
+
+        .product-name {
+            font-size: 16px;
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 4px;
+        }
+
+        .product-price {
+            font-size: 14px;
+            font-weight: 500;
+            color: #444;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .sales-badge {
+            font-weight: 900;
+            font-size: 18px;
+            text-shadow: 1px 1px 0px var(--bg-light);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="logo-container">
+            <!-- Feastables Real Logo from scrape -->
+            <img src="https://feastables.com/cdn/shop/files/Feastables_Rebrand_Non_Tilted.png?v=1715198993&width=180" alt="Feastables Logo">
+        </div>
+        <nav class="nav-menu">
+            <button class="nav-item active">📈 Analytics</button>
+            <button class="nav-item">🍫 Products</button>
+            <button class="nav-item">🌍 Markets</button>
+            <button class="nav-item">⚙️ Settings</button>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header class="animate-in delay-1">
+            <h1>Sales Command Center</h1>
+            <div class="controls">
+                <button class="btn btn-secondary" onclick="updateTimeframe('1M')">Last 30 Days</button>
+                <button class="btn btn-primary">Export Report</button>
+            </div>
+        </header>
+
+        <!-- Key Metrics -->
+        <div class="metrics-grid animate-in delay-2">
+            <div class="metric-card green">
+                <div class="metric-title">Total Revenue <span class="metric-trend">↑ 24%</span></div>
+                <div class="metric-value" id="rev-value">$4.2M</div>
+            </div>
+            <div class="metric-card pink">
+                <div class="metric-title">Chocolate Bars Sold <span class="metric-trend">↑ 18%</span></div>
+                <div class="metric-value" id="vol-value">1.4M</div>
+            </div>
+            <div class="metric-card blue">
+                <div class="metric-title">Avg Order Value <span class="metric-trend">↑ 5%</span></div>
+                <div class="metric-value" id="aov-value">$32.50</div>
+            </div>
+            <div class="metric-card white">
+                <div class="metric-title">Conversion Rate <span class="metric-trend">↑ 2%</span></div>
+                <div class="metric-value" id="conv-value">4.8%</div>
+            </div>
+        </div>
+
+        <!-- Charts and Products -->
+        <div class="dashboard-grid animate-in delay-3">
+            
+            <!-- Dynamic Chart Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title" id="chart-title">Revenue Timeline</div>
+                    <div class="chart-tabs">
+                        <button class="chart-tab active" onclick="switchChart('line')">Timeline</button>
+                        <button class="chart-tab" onclick="switchChart('bar')">By Flavor</button>
+                        <button class="chart-tab" onclick="switchChart('doughnut')">Market Share</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="mainChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Real Products List from Scrape -->
+            <div class="panel animate-in delay-4">
+                <div class="panel-header">
+                    <div class="panel-title">Top Sellers</div>
+                </div>
+                <div class="product-list">
+                    <!-- Product 1 -->
+                    <div class="product-item">
+                        <img class="product-img" src="https://cdn.shopify.com/s/files/1/0551/6060/2784/files/Chocolate_MarioGalaxyCocoaCrunch_60g_400x400.png?v=1776111170" alt="Mario Galaxy Cocoa Crunch">
+                        <div class="product-info">
+                            <div class="product-name">Mario Galaxy Cocoa Crunch</div>
+                            <div class="product-price"><span>$29.99</span> <strong>420K Units</strong></div>
+                        </div>
+                        <div class="sales-badge">#1</div>
+                    </div>
+                    <!-- Product 2 -->
+                    <div class="product-item">
+                        <img class="product-img" src="https://cdn.shopify.com/s/files/1/0551/6060/2784/files/aboutus-slides-3-newbar.png?v=1751400309&width=600" alt="Milk Chocolate">
+                        <div class="product-info">
+                            <div class="product-name">Milk Chocolate Bar</div>
+                            <div class="product-price"><span>$29.99</span> <strong>380K Units</strong></div>
+                        </div>
+                        <div class="sales-badge">#2</div>
+                    </div>
+                    <!-- Product 3 -->
+                    <div class="product-item">
+                        <img class="product-img" src="https://cdn.shopify.com/s/files/1/0551/6060/2784/files/aboutus-slides-3-newbar3.png?v=1751401497&width=600" alt="Exploded Peanut Butter">
+                        <div class="product-info">
+                            <div class="product-name">Exploded Peanut Butter</div>
+                            <div class="product-price"><span>$29.99</span> <strong>310K Units</strong></div>
+                        </div>
+                        <div class="sales-badge">#3</div>
+                    </div>
+                    <!-- Product 4 -->
+                    <div class="product-item">
+                        <img class="product-img" src="https://cdn.shopify.com/s/files/1/0551/6060/2784/files/aboutus-slides-3-newbar2.png?v=1751401356&width=600" alt="Cookies and Creme">
+                        <div class="product-info">
+                            <div class="product-name">Cookies & Creme Bar</div>
+                            <div class="product-price"><span>$29.99</span> <strong>290K Units</strong></div>
+                        </div>
+                        <div class="sales-badge">#4</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Set Chart.js Defaults
+        Chart.defaults.font.family = "'Kanit', sans-serif";
+        Chart.defaults.font.size = 14;
+        Chart.defaults.color = '#000000';
+        Chart.defaults.plugins.tooltip.backgroundColor = '#000000';
+        Chart.defaults.plugins.tooltip.titleFont = { size: 16, family: 'Kanit' };
+        Chart.defaults.plugins.tooltip.bodyFont = { size: 14, family: 'Kanit' };
+        Chart.defaults.plugins.tooltip.padding = 12;
+        Chart.defaults.plugins.tooltip.cornerRadius = 4;
+
+        let mainChart;
+        const ctx = document.getElementById('mainChart').getContext('2d');
+
+        // Colors
+        const colPrimary = '#72E2FF';
+        const colSecondary = '#CEFC17';
+        const colPink = '#FF5C8D';
+        const colOrange = '#FFB020';
+        
+        // Gradients
+        const gradBlue = ctx.createLinearGradient(0, 0, 0, 400);
+        gradBlue.addColorStop(0, 'rgba(114, 226, 255, 1)');
+        gradBlue.addColorStop(1, 'rgba(114, 226, 255, 0.1)');
+
+        const gradGreen = ctx.createLinearGradient(0, 0, 0, 400);
+        gradGreen.addColorStop(0, 'rgba(206, 252, 23, 1)');
+        gradGreen.addColorStop(1, 'rgba(206, 252, 23, 0.1)');
+
+        // Chart Data Configurations
+        const lineData = {
+            type: 'line',
+            data: {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                datasets: [
+                    {
+                        label: 'Total Revenue ($M)',
+                        data: [0.8, 1.1, 0.9, 1.4],
+                        borderColor: '#000',
+                        backgroundColor: gradBlue,
+                        borderWidth: 4,
+                        pointBackgroundColor: colPrimary,
+                        pointBorderColor: '#000',
+                        pointBorderWidth: 3,
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        fill: true,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: getCommonOptions(true)
+        };
+
+        const barData = {
+            type: 'bar',
+            data: {
+                labels: ['Mario Crunch', 'Milk Choc', 'Peanut Butter', 'Cookies & Creme'],
+                datasets: [{
+                    label: 'Units Sold (in thousands)',
+                    data: [420, 380, 310, 290],
+                    backgroundColor: [colPrimary, colSecondary, colPink, colOrange],
+                    borderColor: '#000',
+                    borderWidth: 3,
+                    borderRadius: 4
+                }]
+            },
+            options: getCommonOptions(true)
+        };
+
+        const doughnutData = {
+            type: 'doughnut',
+            data: {
+                labels: ['US', 'Europe', 'Asia', 'Rest of World'],
+                datasets: [{
+                    data: [55, 25, 15, 5],
+                    backgroundColor: [colPrimary, colSecondary, colPink, colOrange],
+                    borderColor: '#000',
+                    borderWidth: 3,
+                    hoverOffset: 10
+                }]
+            },
+            options: getCommonOptions(false)
+        };
+
+        function getCommonOptions(showScales) {
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { usePointStyle: true, font: { weight: 'bold', size: 14 } }
+                    }
+                },
+                scales: showScales ? {
+                    x: { grid: { display: false, drawBorder: true, borderColor: '#000', borderWidth: 3 }, ticks: { font: { weight: 'bold' } } },
+                    y: { grid: { color: 'rgba(0,0,0,0.1)', drawBorder: true, borderColor: '#000', borderWidth: 3 }, ticks: { font: { weight: 'bold' }, beginAtZero: true } }
+                } : { x: { display: false }, y: { display: false } }
+            };
+        }
+
+        function initChart() {
+            mainChart = new Chart(ctx, lineData);
+        }
+
+        // Interactivity functions
+        window.switchChart = function(type) {
+            // Update active tab style
+            document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update title
+            const titleEl = document.getElementById('chart-title');
+
+            mainChart.destroy();
+            if (type === 'line') {
+                titleEl.innerText = "Revenue Timeline";
+                mainChart = new Chart(ctx, lineData);
+            } else if (type === 'bar') {
+                titleEl.innerText = "Flavor Performance";
+                mainChart = new Chart(ctx, barData);
+            } else if (type === 'doughnut') {
+                titleEl.innerText = "Market Demographics";
+                mainChart = new Chart(ctx, doughnutData);
+            }
+        };
+
+        window.updateTimeframe = function(frame) {
+            // Example of simple interactivity: shuffle the metric numbers
+            document.getElementById('rev-value').innerText = frame === '1M' ? '$4.2M' : '$14.2M';
+            document.getElementById('vol-value').innerText = frame === '1M' ? '1.4M' : '4.8M';
+            
+            // Re-animate the cards
+            const cards = document.querySelectorAll('.metric-card');
+            cards.forEach(c => {
+                c.style.animation = 'none';
+                c.offsetHeight; // trigger reflow
+                c.style.animation = 'slideUpFade 0.4s ease forwards';
+            });
+        };
+
+        // Initialize on load
+        initChart();
+
+    </script>
+</body>
+</html>

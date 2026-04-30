@@ -21,8 +21,16 @@ def scrape_brand_data(url, output_path):
     # Ensure the directory exists
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     
+    # Convert the result object to a serializable dictionary
+    if hasattr(result, 'model_dump'):
+        data_to_save = result.model_dump()
+    elif hasattr(result, 'dict'):
+        data_to_save = result.dict()
+    else:
+        data_to_save = result
+        
     with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(result, f, indent=2, ensure_ascii=False)
+        json.dump(data_to_save, f, indent=2, ensure_ascii=False, default=lambda o: getattr(o, '__dict__', str(o)))
         
     print(f"Successfully scraped brand data. Results saved to {output_path}")
 
