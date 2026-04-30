@@ -1,0 +1,17 @@
+{
+  "skill_name": "firecrawl-brand-scraper",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Can you extract the brand guidelines and colors from https://firecrawl.dev?",
+      "expected_output": "A markdown document showing the Firecrawl logo, color palette (e.g. orange and dark gray), typography (Inter/Roboto), and component styles.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "I need the branding data for stripe.com including the typography they use and their main colors.",
+      "expected_output": "A markdown document showing Stripe's brand identity, specifically their known blurple/indigo colors and fonts.",
+      "files": []
+    }
+  ]
+}
